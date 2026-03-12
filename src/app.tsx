@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { Routes, Route } from 'react-router-dom'
-import { FolderOpen, Settings, AlertCircle, TableProperties, SlidersHorizontal } from 'lucide-react'
+import { FolderOpen, Settings, AlertCircle, TableProperties, SlidersHorizontal, CircleOff } from 'lucide-react'
 import { SidebarNav } from './components/layout/sidebar-nav'
 import { PageHeader } from './components/layout/page-header'
 import { SegmentTree } from './components/tree/segment-tree'
@@ -33,11 +33,10 @@ function ParentNodeMessage({ segmentName }: { segmentName: string }) {
 function ApproachLayout() {
   const store = useSegmentStore()
   const timing = useTimingStore()
-  const [showUnassigned, setShowUnassigned] = useState(false)
   const [showOverlaps, setShowOverlaps] = useState(false)
   const [showDimConfig, setShowDimConfig] = useState(false)
   const [showFirstTimeDimSelector, setShowFirstTimeDimSelector] = useState(false)
-  const [activeTab, setActiveTab] = useState<'instruments' | 'rules'>('rules')
+  const [activeTab, setActiveTab] = useState<'instruments' | 'unassigned' | 'rules'>('rules')
 
   const activeGroup = store.selectedGroup
   const groupHasDimensions = activeGroup && activeGroup.selectedDimensionIds.length > 0
@@ -261,6 +260,22 @@ function ApproachLayout() {
                   </button>
                   <button
                     role="tab"
+                    aria-selected={activeTab === 'unassigned'}
+                    onClick={() => setActiveTab('unassigned')}
+                    className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-t-md border border-b-0 transition-colors ${
+                      activeTab === 'unassigned'
+                        ? 'bg-white text-primary-700 border-surface-200'
+                        : 'bg-surface-50 text-surface-500 border-transparent hover:text-surface-700'
+                    }`}
+                  >
+                    <CircleOff size={14} />
+                    Unassigned
+                    {unassignedInstruments.length > 0 && (
+                      <span className="text-xs text-surface-400">({unassignedInstruments.length})</span>
+                    )}
+                  </button>
+                  <button
+                    role="tab"
                     aria-selected={activeTab === 'rules'}
                     onClick={() => setActiveTab('rules')}
                     className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-t-md border border-b-0 transition-colors ${
@@ -278,9 +293,9 @@ function ApproachLayout() {
                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto p-4">
+              <div className="flex-1 overflow-y-auto">
                 {activeTab === 'instruments' && ruleHasConditions(segmentForPanel.savedRule) ? (
-                  <div>
+                  <div className="p-4">
                     {hasUnsavedChanges && (
                       <div className="flex items-center gap-1.5 px-3 py-1.5 mb-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md">
                         <AlertCircle size={12} className="shrink-0" />
@@ -295,17 +310,25 @@ function ApproachLayout() {
                       startExpanded
                     />
                   </div>
-                ) : (
-                  <RuleBuilderPanel
-                    segment={segmentForPanel}
+                ) : activeTab === 'unassigned' && ruleHasConditions(segmentForPanel.savedRule) ? (
+                  <UnassignedView
+                    instruments={unassignedInstruments}
                     dimensions={dimensions}
-                    bucketDefinitions={bucketDefinitions}
-                    claimedValues={claimedValues}
-                    rule={segmentForPanel.rule ?? null}
-                    onRuleChange={handleRuleChange}
-                    onSave={handleSaveRule}
-                    onMnemonicChange={handleMnemonicChange}
+                    inline
                   />
+                ) : (
+                  <div className="p-4">
+                    <RuleBuilderPanel
+                      segment={segmentForPanel}
+                      dimensions={dimensions}
+                      bucketDefinitions={bucketDefinitions}
+                      claimedValues={claimedValues}
+                      rule={segmentForPanel.rule ?? null}
+                      onRuleChange={handleRuleChange}
+                      onSave={handleSaveRule}
+                      onMnemonicChange={handleMnemonicChange}
+                    />
+                  </div>
                 )}
               </div>
 
@@ -315,7 +338,7 @@ function ApproachLayout() {
                     summary={summary}
                     segmentName={segmentForPanel.name}
                     overlapCount={overlaps.length}
-                    onShowUnassigned={() => setShowUnassigned(true)}
+                    onShowUnassigned={() => setActiveTab('unassigned')}
                     onShowOverlaps={() => setShowOverlaps(true)}
                   />
                 </div>
@@ -337,14 +360,6 @@ function ApproachLayout() {
           )}
         </div>
       </div>
-
-      {showUnassigned && (
-        <UnassignedView
-          instruments={unassignedInstruments}
-          dimensions={dimensions}
-          onClose={() => setShowUnassigned(false)}
-        />
-      )}
 
       {showOverlaps && (
         <OverlapView
