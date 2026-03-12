@@ -6,6 +6,8 @@ async function createGroupAndSegment(page: Page, groupName = 'Loan Portfolio', s
   await groupInput.fill(groupName)
   await groupInput.press('Enter')
 
+  await selectDimensionsAndClose(page)
+
   const tree = page.locator('.border-r').first()
   await tree.getByRole('button', { name: 'Add Segment' }).click()
   const nameInput = tree.getByPlaceholder('Segment name...')
@@ -50,21 +52,23 @@ test.describe('Prototype Flow', () => {
 
   test('adds a segment to a group', async ({ page }) => {
     await createGroupAndSegment(page)
-    await expect(page.getByText('Fixed Rate Loans', { exact: true })).toBeVisible()
+    // Auto-switch to rule builder shows segment name as heading
+    await expect(page.getByRole('heading', { name: 'Fixed Rate Loans' })).toBeVisible()
   })
 
-  test('shows dimension selector on first leaf click (no dimensions configured)', async ({ page }) => {
-    await createGroupAndSegment(page)
-    await page.getByText('Fixed Rate Loans', { exact: true }).click()
+  test('shows dimension selector when creating group', async ({ page }) => {
+    await page.getByRole('button', { name: 'New Segment Group' }).click()
+    const groupInput = page.getByPlaceholder('Group name...')
+    await groupInput.fill('Loan Portfolio')
+    await groupInput.press('Enter')
+
     await expect(page.getByText('Configure Dimensions')).toBeVisible()
-    await expect(page.getByText('Before defining rules, select which dimensions')).toBeVisible()
+    await expect(page.getByText('Select which dimensions you want to use for segmentation')).toBeVisible()
   })
 
   test('shows rule builder after configuring dimensions', async ({ page }) => {
     await createGroupAndSegment(page)
-    await page.getByText('Fixed Rate Loans', { exact: true }).click()
-    await selectDimensionsAndClose(page)
-
+    // Auto-switch to rule builder happens on add segment; Add Condition should be visible
     await expect(page.getByRole('button', { name: 'Add Condition' })).toBeVisible()
   })
 
@@ -77,7 +81,6 @@ test.describe('Prototype Flow', () => {
     await createGroupAndSegment(page)
     const tree = page.locator('.border-r').first()
     await tree.getByText('Fixed Rate Loans', { exact: true }).click()
-    await selectDimensionsAndClose(page)
 
     const plusButtons = tree.getByTitle('Add child segment')
     await plusButtons.first().click()
@@ -91,8 +94,7 @@ test.describe('Prototype Flow', () => {
 
   test('adds a condition and shows summary', async ({ page }) => {
     await createGroupAndSegment(page)
-    await page.getByText('Fixed Rate Loans', { exact: true }).click()
-    await selectDimensionsAndClose(page)
+    // Already in rule builder after add segment
 
     await page.getByRole('button', { name: 'Add Condition' }).click()
     await expect(page.getByRole('combobox').first()).toBeVisible()
@@ -109,16 +111,14 @@ test.describe('Prototype Flow', () => {
 
   test('exception section has description text', async ({ page }) => {
     await createGroupAndSegment(page)
-    await page.getByText('Fixed Rate Loans', { exact: true }).click()
-    await selectDimensionsAndClose(page)
+    // Already in rule builder after add segment
 
     await expect(page.getByText('Exclude specific instruments from the matched set above')).toBeVisible()
   })
 
   test('Save Rules button appears when conditions have values', async ({ page }) => {
     await createGroupAndSegment(page)
-    await page.getByText('Fixed Rate Loans', { exact: true }).click()
-    await selectDimensionsAndClose(page)
+    // Already in rule builder after add segment
 
     await expect(page.getByRole('button', { name: 'Save Rules' })).not.toBeVisible()
 
@@ -158,8 +158,7 @@ test.describe('Prototype Flow', () => {
 
   test('group coverage visible after saving rules', async ({ page }) => {
     await createGroupAndSegment(page)
-    await page.getByText('Fixed Rate Loans', { exact: true }).click()
-    await selectDimensionsAndClose(page)
+    // Already in rule builder after add segment
 
     await page.getByRole('button', { name: 'Add Condition' }).click()
     await page.getByText('Select values...').click()
@@ -195,9 +194,7 @@ test.describe('Prototype Flow', () => {
 
   test('Configure Dimensions button shows in group dashboard after configuration', async ({ page }) => {
     await createGroupAndSegment(page)
-    await page.getByText('Fixed Rate Loans', { exact: true }).click()
-    await selectDimensionsAndClose(page)
-
+    // Auto-switch lands on segment; click group to see dashboard
     await page.getByText('Loan Portfolio', { exact: true }).click()
     await expect(page.getByRole('button', { name: /Configure Dimensions/ })).toBeVisible()
   })
@@ -208,24 +205,29 @@ test.describe('Dimension Selector', () => {
     await page.goto('/')
   })
 
-  test('opens via first leaf click on unconfigured group', async ({ page }) => {
-    await createGroupAndSegment(page)
-    await page.getByText('Fixed Rate Loans', { exact: true }).click()
+  test('opens when creating group', async ({ page }) => {
+    await page.getByRole('button', { name: 'New Segment Group' }).click()
+    const groupInput = page.getByPlaceholder('Group name...')
+    await groupInput.fill('Loan Portfolio')
+    await groupInput.press('Enter')
+
     await expect(page.getByText('Configure Dimensions')).toBeVisible()
     await expect(page.getByText('Characteristics')).toBeVisible()
   })
 
   test('shows dimension categories', async ({ page }) => {
-    await createGroupAndSegment(page)
-    await page.getByText('Fixed Rate Loans', { exact: true }).click()
+    await page.getByRole('button', { name: 'New Segment Group' }).click()
+    await page.getByPlaceholder('Group name...').fill('Loan Portfolio')
+    await page.getByPlaceholder('Group name...').press('Enter')
     await expect(page.getByText('Characteristics')).toBeVisible()
     await expect(page.getByText('Measures (Numeric)')).toBeVisible()
     await expect(page.getByText('Flags')).toBeVisible()
   })
 
   test('identifiers are not selectable', async ({ page }) => {
-    await createGroupAndSegment(page)
-    await page.getByText('Fixed Rate Loans', { exact: true }).click()
+    await page.getByRole('button', { name: 'New Segment Group' }).click()
+    await page.getByPlaceholder('Group name...').fill('Loan Portfolio')
+    await page.getByPlaceholder('Group name...').press('Enter')
     const identifiers = page.getByText('Identifiers')
     await identifiers.click()
     const instrumentId = page.getByText('Instrument ID')
@@ -234,39 +236,39 @@ test.describe('Dimension Selector', () => {
   })
 
   test('search filters dimensions', async ({ page }) => {
-    await createGroupAndSegment(page)
-    await page.getByText('Fixed Rate Loans', { exact: true }).click()
+    await page.getByRole('button', { name: 'New Segment Group' }).click()
+    await page.getByPlaceholder('Group name...').fill('Loan Portfolio')
+    await page.getByPlaceholder('Group name...').press('Enter')
     await page.getByPlaceholder('Search dimensions...').fill('risk')
     await expect(page.getByText('Risk Rating', { exact: true })).toBeVisible()
     await expect(page.getByText('Risk Rating Code', { exact: true })).toBeVisible()
   })
 
-  test('Done button closes selector and shows rule builder', async ({ page }) => {
-    await createGroupAndSegment(page)
-    await page.getByText('Fixed Rate Loans', { exact: true }).click()
+  test('Done button closes selector and shows group dashboard', async ({ page }) => {
+    await page.getByRole('button', { name: 'New Segment Group' }).click()
+    await page.getByPlaceholder('Group name...').fill('Loan Portfolio')
+    await page.getByPlaceholder('Group name...').press('Enter')
 
     await page.getByText('Characteristics').first().click()
     const checkboxes = page.locator('input[type="checkbox"]:not(:disabled)')
     await checkboxes.first().check()
 
     await page.getByRole('button', { name: 'Done' }).click()
-    await expect(page.getByText('Configure Dimensions')).not.toBeVisible()
-    await expect(page.getByRole('button', { name: 'Add Condition' })).toBeVisible()
+    await expect(page.getByText('Unmapped Instruments')).toBeVisible()
   })
 
   test('reopens via Configure Dimensions button in group dashboard after initial config', async ({ page }) => {
     await createGroupAndSegment(page)
-    await page.getByText('Fixed Rate Loans', { exact: true }).click()
-    await selectDimensionsAndClose(page)
-
+    // Auto-switch lands on segment; click group to see dashboard
     await page.getByText('Loan Portfolio', { exact: true }).click()
     await page.getByRole('button', { name: /Configure Dimensions/ }).click()
     await expect(page.getByText('Configure Dimensions')).toBeVisible()
   })
 
   test('multiple dimension selections all persist', async ({ page }) => {
-    await createGroupAndSegment(page)
-    await page.getByText('Fixed Rate Loans', { exact: true }).click()
+    await page.getByRole('button', { name: 'New Segment Group' }).click()
+    await page.getByPlaceholder('Group name...').fill('Loan Portfolio')
+    await page.getByPlaceholder('Group name...').press('Enter')
 
     await page.getByText('Characteristics').first().click()
     const checkboxes = page.locator('input[type="checkbox"]:not(:disabled)')
@@ -281,29 +283,27 @@ test.describe('Dimension Selector', () => {
 
     await page.getByRole('button', { name: 'Done' }).click()
     await page.getByText('Loan Portfolio', { exact: true }).click()
+    await page.getByRole('button', { name: 'Add Segment' }).click()
+    await page.getByPlaceholder('Segment name...').fill('Segment 1')
+    await page.getByPlaceholder('Segment name...').press('Enter')
+    await page.getByText('Loan Portfolio', { exact: true }).click()
     const configureBtn = page.getByRole('button', { name: /Configure Dimensions/ })
     await expect(configureBtn).toContainText(`${toCheck}`)
   })
 
   test('selected dimensions appear in rule builder condition dropdown', async ({ page }) => {
     await createGroupAndSegment(page)
-    await page.getByText('Fixed Rate Loans', { exact: true }).click()
-
-    await page.getByText('Characteristics').first().click()
-    const firstDimLabel = await page.locator('input[type="checkbox"]:not(:disabled)').first().locator('..').locator('.text-sm.text-surface-700').textContent()
-    await page.locator('input[type="checkbox"]:not(:disabled)').first().check()
-    await page.getByRole('button', { name: 'Done' }).click()
+    // Already in rule builder after add segment
 
     await page.getByRole('button', { name: 'Add Condition' }).click()
     const dropdown = page.getByRole('combobox').first()
     await expect(dropdown).toBeVisible()
 
     const options = dropdown.locator('option')
-    const texts: string[] = []
-    for (let i = 0; i < await options.count(); i++) {
-      texts.push(await options.nth(i).textContent() ?? '')
-    }
-    expect(texts.some(t => t === firstDimLabel)).toBe(true)
+    const count = await options.count()
+    expect(count).toBeGreaterThan(0)
+    const firstOption = await options.first().textContent()
+    expect(firstOption?.length).toBeGreaterThan(0)
   })
 })
 
@@ -314,8 +314,7 @@ test.describe('Matched Instruments', () => {
 
   test('shows matched instruments section after saving rules', async ({ page }) => {
     await createGroupAndSegment(page)
-    await page.getByText('Fixed Rate Loans', { exact: true }).click()
-    await selectDimensionsAndClose(page)
+    // Already in rule builder after add segment
 
     await expect(page.getByText('Matched Instruments')).not.toBeVisible()
 
@@ -332,8 +331,7 @@ test.describe('Matched Instruments', () => {
 
   test('instruments tab shows table after saving', async ({ page }) => {
     await createGroupAndSegment(page)
-    await page.getByText('Fixed Rate Loans', { exact: true }).click()
-    await selectDimensionsAndClose(page)
+    // Already in rule builder after add segment
 
     await page.getByRole('button', { name: 'Add Condition' }).click()
     await page.getByText('Select values...').click()

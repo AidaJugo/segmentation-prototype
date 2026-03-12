@@ -7,6 +7,7 @@ interface UnassignedViewProps {
   dimensions: Dimension[]
   onClose?: () => void
   inline?: boolean
+  headerRight?: React.ReactNode
 }
 
 function formatCurrency(value: number): string {
@@ -109,7 +110,7 @@ function SuggestionCard({ breakdown, dimensionName }: { breakdown: ValueBreakdow
   )
 }
 
-function UnassignedContent({ instruments, dimensions }: { instruments: Instrument[]; dimensions: Dimension[] }) {
+function UnassignedContent({ instruments, dimensions, headerRight }: { instruments: Instrument[]; dimensions: Dimension[]; headerRight?: React.ReactNode }) {
   const totalBalance = instruments.reduce((sum, inst) => sum + inst.balance, 0)
   const [activeView, setActiveView] = useState<'chart' | 'table'>('chart')
   const [activeDimIndex, setActiveDimIndex] = useState(0)
@@ -135,6 +136,7 @@ function UnassignedContent({ instruments, dimensions }: { instruments: Instrumen
             {instruments.length} instruments, {formatCurrency(totalBalance)} total balance
           </p>
         </div>
+        {headerRight}
       </div>
 
       {listDimensions.length > 0 && (
@@ -244,11 +246,11 @@ function UnassignedContent({ instruments, dimensions }: { instruments: Instrumen
   )
 }
 
-export function UnassignedView({ instruments, dimensions, onClose, inline = false }: UnassignedViewProps) {
+export function UnassignedView({ instruments, dimensions, onClose, inline = false, headerRight }: UnassignedViewProps) {
   if (inline) {
     return (
       <div className="flex flex-col h-full">
-        <UnassignedContent instruments={instruments} dimensions={dimensions} />
+        <UnassignedContent instruments={instruments} dimensions={dimensions} headerRight={headerRight} />
       </div>
     )
   }

@@ -43,6 +43,13 @@ We use Vercel for hosting. To deploy your own copy:
    ```
 3. Replit will detect the port and provide a public URL
 
+## Acceptance criteria (key behaviors)
+
+- Dimension selector opens automatically when creating a new segment group (before adding segments)
+- Configure Dimensions button is in the group dashboard, on the right of the Unmapped Instruments header row
+- Group dashboard shows Unmapped Instruments (top) and Portfolio Coverage (bottom) in a single scrollable view
+- Overlap warning visible at both group level and segment level for instruments in multiple segments
+
 ## What it does
 
 - Create segment groups and nested segments
@@ -50,7 +57,6 @@ We use Vercel for hosting. To deploy your own copy:
 - Define buckets for range dimensions (e.g., FICO score ranges)
 - Build rules with conditions (AND logic) and exceptions
 - View matched instruments, balance coverage, and unassigned instruments
-- Overlap prevention: values already used by other segments are greyed out
 - Overlap detection: warns when instruments match multiple segments across dimensions
 
 ## Known limitations

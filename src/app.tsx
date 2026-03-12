@@ -25,7 +25,6 @@ function ApproachLayout() {
   const timing = useTimingStore()
   const [showOverlaps, setShowOverlaps] = useState(false)
   const [showDimConfig, setShowDimConfig] = useState(false)
-  const [showFirstTimeDimSelector, setShowFirstTimeDimSelector] = useState(false)
   const [activeTab, setActiveTab] = useState<'instruments' | 'rules'>('rules')
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
 
@@ -118,10 +117,6 @@ function ApproachLayout() {
       timing.startTiming(id, 'rule-builder')
       const hasSaved = ruleHasConditions(seg.savedRule)
       setActiveTab(hasSaved ? 'instruments' : 'rules')
-      const group = store.groups.find(g => g.segments[id])
-      if (group && group.selectedDimensionIds.length === 0) {
-        setShowFirstTimeDimSelector(true)
-      }
     }
   }, [store, timing])
 
@@ -136,6 +131,15 @@ function ApproachLayout() {
     setShowDimConfig(true)
     return id
   }, [store])
+
+  const handleAddSegment = useCallback((groupId: string, parentId: string | null, name: string) => {
+    const id = store.addSegment(groupId, parentId, name)
+    setSelectedGroupId(null)
+    store.setSelectedSegmentId(id)
+    setActiveTab('rules')
+    timing.startTiming(id, 'rule-builder')
+    return id
+  }, [store, timing])
 
   const handleOpenDimConfig = useCallback((groupId: string) => {
     const group = store.groups.find(g => g.id === groupId)
@@ -157,7 +161,6 @@ function ApproachLayout() {
 
   const handleDimConfigDone = useCallback(() => {
     setShowDimConfig(false)
-    setShowFirstTimeDimSelector(false)
   }, [])
 
   const showGroupView = selectedGroupId !== null && !segmentForPanel
@@ -176,7 +179,7 @@ function ApproachLayout() {
             onSelectGroup={handleSelectGroup}
             onAddGroup={handleAddGroup}
             onRemoveGroup={store.removeGroup}
-            onAddSegment={store.addSegment}
+            onAddSegment={handleAddSegment}
             onRenameSegment={store.renameSegment}
             onDeleteSegment={store.removeSegment}
             onUpdateGroupMnemonic={store.updateGroupMnemonic}
@@ -189,41 +192,7 @@ function ApproachLayout() {
               onToggle={handleToggleDimension}
               onSetBuckets={handleSetBuckets}
               onClose={handleDimConfigDone}
-            />
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (showFirstTimeDimSelector && activeGroup) {
-    const selectedIds = new Set(activeGroup.selectedDimensionIds)
-    return (
-      <div className="flex flex-col flex-1 min-h-0">
-        <PageHeader title="Loan IQ - Segmentation" />
-        <div className="flex flex-1 min-h-0">
-          <SegmentTree
-            groups={store.groups}
-            selectedSegmentId={store.selectedSegmentId}
-            selectedGroupId={selectedGroupId}
-            onSelectSegment={handleSelectSegment}
-            onSelectGroup={handleSelectGroup}
-            onAddGroup={handleAddGroup}
-            onRemoveGroup={store.removeGroup}
-            onAddSegment={store.addSegment}
-            onRenameSegment={store.renameSegment}
-            onDeleteSegment={store.removeSegment}
-            onUpdateGroupMnemonic={store.updateGroupMnemonic}
-          />
-          <div className="flex-1 min-h-0">
-            <DimensionSelector
-              dimensions={allDimensions}
-              selectedIds={selectedIds}
-              bucketDefinitions={activeGroup.bucketDefinitions}
-              onToggle={handleToggleDimension}
-              onSetBuckets={handleSetBuckets}
-              onClose={handleDimConfigDone}
-              introMessage="Before defining rules, select which dimensions you want to use for segmentation in this group."
+              introMessage="Select which dimensions you want to use for segmentation in this group."
             />
           </div>
         </div>
@@ -242,9 +211,9 @@ function ApproachLayout() {
           selectedGroupId={selectedGroupId}
           onSelectSegment={handleSelectSegment}
           onSelectGroup={handleSelectGroup}
-          onAddGroup={store.addGroup}
+          onAddGroup={handleAddGroup}
           onRemoveGroup={store.removeGroup}
-          onAddSegment={store.addSegment}
+          onAddSegment={handleAddSegment}
           onRenameSegment={store.renameSegment}
           onDeleteSegment={store.removeSegment}
           onUpdateGroupMnemonic={store.updateGroupMnemonic}
@@ -259,23 +228,22 @@ function ApproachLayout() {
             </div>
           ) : showGroupView ? (
             <>
-              <div className="flex items-center justify-between border-b border-surface-200 px-4 py-3 gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleOpenDimConfig(selectedGroupId!)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-surface-700 bg-surface-100 hover:bg-surface-200 rounded-md transition-colors"
-                >
-                  <Settings size={16} />
-                  Configure Dimensions{activeGroup?.selectedDimensionIds.length ? ` (${activeGroup.selectedDimensionIds.length})` : ''}
-                </button>
-              </div>
-
               <div className="flex-1 overflow-y-auto">
                 <div className="p-4">
                   <UnassignedView
                     instruments={unassignedInstruments}
                     dimensions={dimensions}
                     inline
+                    headerRight={
+                      <button
+                        type="button"
+                        onClick={() => handleOpenDimConfig(selectedGroupId!)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-surface-700 bg-surface-100 hover:bg-surface-200 rounded-md transition-colors shrink-0"
+                      >
+                        <Settings size={16} />
+                        Configure Dimensions{activeGroup?.selectedDimensionIds.length ? ` (${activeGroup.selectedDimensionIds.length})` : ''}
+                      </button>
+                    }
                   />
                 </div>
                 <BalancePreview
@@ -322,7 +290,37 @@ function ApproachLayout() {
                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto min-h-0">
+                {ruleHasConditions(segmentForPanel.savedRule) && (
+                  <div className="sticky top-0 z-10 border-b border-surface-200 bg-surface-50 px-4 py-2 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs font-medium text-surface-500">This segment:</span>
+                      <span className="text-xs text-surface-700 font-semibold">
+                        {segmentSummary.matchedCount.toLocaleString()} instruments
+                      </span>
+                      <span className="text-xs text-surface-600">
+                        ${segmentSummary.matchedBalance >= 1_000_000
+                          ? `${(segmentSummary.matchedBalance / 1_000_000).toFixed(1)}M`
+                          : segmentSummary.matchedBalance >= 1_000
+                            ? `${(segmentSummary.matchedBalance / 1_000).toFixed(0)}K`
+                            : segmentSummary.matchedBalance.toFixed(0)}
+                      </span>
+                      <span className="text-xs text-surface-400">
+                        ({segmentSummary.matchedPercent.toFixed(1)}% of portfolio)
+                      </span>
+                    </div>
+                    {segmentOverlapCount > 0 && (
+                      <button
+                        onClick={() => setShowOverlaps(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 rounded text-xs text-red-700 hover:bg-red-100 transition-colors cursor-pointer shrink-0"
+                      >
+                        <AlertCircle size={12} className="shrink-0" />
+                        <span>{segmentOverlapCount} instrument{segmentOverlapCount > 1 ? 's' : ''} assigned to multiple segments</span>
+                        <span className="text-red-500 underline">View details</span>
+                      </button>
+                    )}
+                  </div>
+                )}
                 {activeTab === 'instruments' && ruleHasConditions(segmentForPanel.savedRule) ? (
                   <div className="p-4">
                     {hasUnsavedChanges && (
@@ -353,39 +351,6 @@ function ApproachLayout() {
                   </div>
                 )}
               </div>
-
-              {ruleHasConditions(segmentForPanel.savedRule) && (
-                <div className="border-t border-surface-200 bg-surface-50">
-                  <div className="px-4 py-2 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <span className="text-xs font-medium text-surface-500">This segment:</span>
-                      <span className="text-xs text-surface-700 font-semibold">
-                        {segmentSummary.matchedCount.toLocaleString()} instruments
-                      </span>
-                      <span className="text-xs text-surface-600">
-                        ${segmentSummary.matchedBalance >= 1_000_000
-                          ? `${(segmentSummary.matchedBalance / 1_000_000).toFixed(1)}M`
-                          : segmentSummary.matchedBalance >= 1_000
-                            ? `${(segmentSummary.matchedBalance / 1_000).toFixed(0)}K`
-                            : segmentSummary.matchedBalance.toFixed(0)}
-                      </span>
-                      <span className="text-xs text-surface-400">
-                        ({segmentSummary.matchedPercent.toFixed(1)}% of portfolio)
-                      </span>
-                    </div>
-                  </div>
-                  {segmentOverlapCount > 0 && (
-                    <button
-                      onClick={() => setShowOverlaps(true)}
-                      className="flex items-center gap-1.5 px-4 py-1.5 w-full bg-red-50 border-t border-red-200 text-xs text-red-700 hover:bg-red-100 transition-colors cursor-pointer text-left"
-                    >
-                      <AlertCircle size={12} className="shrink-0" />
-                      <span>{segmentOverlapCount} instrument{segmentOverlapCount > 1 ? 's' : ''} in this segment assigned to multiple segments</span>
-                      <span className="ml-auto text-red-500 underline">View details</span>
-                    </button>
-                  )}
-                </div>
-              )}
             </>
           ) : (
             <div className="flex-1 overflow-y-auto p-4">
