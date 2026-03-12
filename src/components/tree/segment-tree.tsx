@@ -15,7 +15,6 @@ interface SegmentTreeProps {
   onRenameSegment: (id: string, name: string) => void
   onDeleteSegment: (id: string) => void
   onUpdateGroupMnemonic?: (groupId: string, mnemonic: string) => void
-  onOpenDimConfig?: (groupId: string) => void
 }
 
 function GroupMnemonicBadge({
@@ -87,7 +86,6 @@ function GroupSection({
   onRenameSegment,
   onDeleteSegment,
   onUpdateGroupMnemonic,
-  onOpenDimConfig,
 }: {
   group: SegmentGroup
   selectedSegmentId: string | null
@@ -99,7 +97,6 @@ function GroupSection({
   onRenameSegment: (id: string, name: string) => void
   onDeleteSegment: (id: string) => void
   onUpdateGroupMnemonic?: (groupId: string, mnemonic: string) => void
-  onOpenDimConfig?: (groupId: string) => void
 }) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [newSegmentId, setNewSegmentId] = useState<string | null>(null)
@@ -137,8 +134,6 @@ function GroupSection({
     onRemoveGroup(group.id)
   }
 
-  const dimCount = group.selectedDimensionIds.length
-
   return (
     <div className="border-b border-surface-200">
       <div className={`group/grp flex items-center gap-1 p-3 ${isGroupSelected ? 'bg-primary-50' : ''}`}>
@@ -163,18 +158,6 @@ function GroupSection({
           mnemonic={group.mnemonic}
           onUpdate={onUpdateGroupMnemonic ? m => onUpdateGroupMnemonic(group.id, m) : undefined}
         />
-        <button
-          type="button"
-          onClick={e => { e.stopPropagation(); onOpenDimConfig?.(group.id) }}
-          className={`text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 transition-colors ${
-            dimCount > 0
-              ? 'bg-primary-50 text-primary-600 hover:bg-primary-100'
-              : 'bg-surface-100 text-surface-500 hover:bg-surface-200'
-          }`}
-          title="Configure dimensions"
-        >
-          {dimCount > 0 ? `${dimCount} dims` : '+ dims'}
-        </button>
         <button
           onClick={handleDeleteGroup}
           className="p-1 rounded opacity-0 group-hover/grp:opacity-100 text-surface-400 hover:text-red-500 hover:bg-red-50 transition-all"
@@ -241,7 +224,6 @@ export function SegmentTree({
   onRenameSegment,
   onDeleteSegment,
   onUpdateGroupMnemonic,
-  onOpenDimConfig,
 }: SegmentTreeProps) {
   const [addingGroup, setAddingGroup] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
@@ -273,7 +255,6 @@ export function SegmentTree({
             onRenameSegment={onRenameSegment}
             onDeleteSegment={onDeleteSegment}
             onUpdateGroupMnemonic={onUpdateGroupMnemonic}
-            onOpenDimConfig={onOpenDimConfig}
           />
         ))}
 

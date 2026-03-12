@@ -65,7 +65,6 @@ test.describe('Prototype Flow', () => {
     await page.getByText('Fixed Rate Loans', { exact: true }).click()
     await selectDimensionsAndClose(page)
 
-    await expect(page.getByText(/dims/)).toBeVisible()
     await expect(page.getByRole('button', { name: 'Add Condition' })).toBeVisible()
   })
 
@@ -171,7 +170,6 @@ test.describe('Prototype Flow', () => {
     await expect(page.getByText('This segment:').first()).toBeVisible()
 
     await page.getByText('Loan Portfolio', { exact: true }).click()
-    await expect(page.getByRole('tab', { name: 'Coverage' })).toBeVisible()
     await expect(page.getByText('Portfolio Coverage').first()).toBeVisible()
     await expect(page.getByText(/1,000 instruments/i).first()).toBeVisible()
   })
@@ -195,12 +193,13 @@ test.describe('Prototype Flow', () => {
     await expect(page.getByText('LOANS')).toBeVisible()
   })
 
-  test('dims badge shows on group header after configuration', async ({ page }) => {
+  test('Configure Dimensions button shows in group dashboard after configuration', async ({ page }) => {
     await createGroupAndSegment(page)
     await page.getByText('Fixed Rate Loans', { exact: true }).click()
     await selectDimensionsAndClose(page)
 
-    await expect(page.getByText(/dims/)).toBeVisible()
+    await page.getByText('Loan Portfolio', { exact: true }).click()
+    await expect(page.getByRole('button', { name: /Configure Dimensions/ })).toBeVisible()
   })
 })
 
@@ -255,12 +254,13 @@ test.describe('Dimension Selector', () => {
     await expect(page.getByRole('button', { name: 'Add Condition' })).toBeVisible()
   })
 
-  test('reopens via dims badge in tree after initial config', async ({ page }) => {
+  test('reopens via Configure Dimensions button in group dashboard after initial config', async ({ page }) => {
     await createGroupAndSegment(page)
     await page.getByText('Fixed Rate Loans', { exact: true }).click()
     await selectDimensionsAndClose(page)
 
-    await page.getByText(/dims/).first().click()
+    await page.getByText('Loan Portfolio', { exact: true }).click()
+    await page.getByRole('button', { name: /Configure Dimensions/ }).click()
     await expect(page.getByText('Configure Dimensions')).toBeVisible()
   })
 
@@ -280,8 +280,9 @@ test.describe('Dimension Selector', () => {
     }
 
     await page.getByRole('button', { name: 'Done' }).click()
-    const dimBadge = page.getByText(/dims/).first()
-    await expect(dimBadge).toContainText(`${toCheck}`)
+    await page.getByText('Loan Portfolio', { exact: true }).click()
+    const configureBtn = page.getByRole('button', { name: /Configure Dimensions/ })
+    await expect(configureBtn).toContainText(`${toCheck}`)
   })
 
   test('selected dimensions appear in rule builder condition dropdown', async ({ page }) => {
