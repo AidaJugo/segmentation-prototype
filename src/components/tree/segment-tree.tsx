@@ -6,13 +6,16 @@ import type { SegmentGroup } from '../../types'
 interface SegmentTreeProps {
   groups: SegmentGroup[]
   selectedSegmentId: string | null
+  selectedGroupId?: string | null
   onSelectSegment: (id: string) => void
+  onSelectGroup?: (groupId: string) => void
   onAddGroup: (name: string) => string
   onRemoveGroup: (groupId: string) => void
   onAddSegment: (groupId: string, parentId: string | null, name: string) => string
   onRenameSegment: (id: string, name: string) => void
   onDeleteSegment: (id: string) => void
   onUpdateGroupMnemonic?: (groupId: string, mnemonic: string) => void
+  onOpenDimConfig?: (groupId: string) => void
 }
 
 function GroupMnemonicBadge({
@@ -76,21 +79,27 @@ function GroupMnemonicBadge({
 function GroupSection({
   group,
   selectedSegmentId,
+  isGroupSelected,
   onSelectSegment,
+  onSelectGroup,
   onRemoveGroup,
   onAddSegment,
   onRenameSegment,
   onDeleteSegment,
   onUpdateGroupMnemonic,
+  onOpenDimConfig,
 }: {
   group: SegmentGroup
   selectedSegmentId: string | null
+  isGroupSelected?: boolean
   onSelectSegment: (id: string) => void
+  onSelectGroup?: (groupId: string) => void
   onRemoveGroup: (groupId: string) => void
   onAddSegment: (groupId: string, parentId: string | null, name: string) => string
   onRenameSegment: (id: string, name: string) => void
   onDeleteSegment: (id: string) => void
   onUpdateGroupMnemonic?: (groupId: string, mnemonic: string) => void
+  onOpenDimConfig?: (groupId: string) => void
 }) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [newSegmentId, setNewSegmentId] = useState<string | null>(null)
@@ -132,16 +141,21 @@ function GroupSection({
 
   return (
     <div className="border-b border-surface-200">
-      <div className="group/grp flex items-center gap-1 p-3">
+      <div className={`group/grp flex items-center gap-1 p-3 ${isGroupSelected ? 'bg-primary-50' : ''}`}>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-2 flex-1 text-left min-w-0"
+          className="shrink-0 p-0.5"
         >
           {isExpanded
-            ? <ChevronDown size={14} className="text-surface-400 shrink-0" />
-            : <ChevronRight size={14} className="text-surface-400 shrink-0" />
+            ? <ChevronDown size={14} className="text-surface-400" />
+            : <ChevronRight size={14} className="text-surface-400" />
           }
-          <span className="text-sm font-semibold text-surface-800 truncate">
+        </button>
+        <button
+          onClick={() => onSelectGroup?.(group.id)}
+          className="flex items-center gap-2 flex-1 text-left min-w-0"
+        >
+          <span className={`text-sm font-semibold truncate ${isGroupSelected ? 'text-primary-700' : 'text-surface-800'}`}>
             {group.name}
           </span>
         </button>
@@ -149,11 +163,18 @@ function GroupSection({
           mnemonic={group.mnemonic}
           onUpdate={onUpdateGroupMnemonic ? m => onUpdateGroupMnemonic(group.id, m) : undefined}
         />
-        {dimCount > 0 && (
-          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-primary-50 text-primary-600 shrink-0">
-            {dimCount} dims
-          </span>
-        )}
+        <button
+          type="button"
+          onClick={e => { e.stopPropagation(); onOpenDimConfig?.(group.id) }}
+          className={`text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 transition-colors ${
+            dimCount > 0
+              ? 'bg-primary-50 text-primary-600 hover:bg-primary-100'
+              : 'bg-surface-100 text-surface-500 hover:bg-surface-200'
+          }`}
+          title="Configure dimensions"
+        >
+          {dimCount > 0 ? `${dimCount} dims` : '+ dims'}
+        </button>
         <button
           onClick={handleDeleteGroup}
           className="p-1 rounded opacity-0 group-hover/grp:opacity-100 text-surface-400 hover:text-red-500 hover:bg-red-50 transition-all"
@@ -211,13 +232,16 @@ function GroupSection({
 export function SegmentTree({
   groups,
   selectedSegmentId,
+  selectedGroupId,
   onSelectSegment,
+  onSelectGroup,
   onAddGroup,
   onRemoveGroup,
   onAddSegment,
   onRenameSegment,
   onDeleteSegment,
   onUpdateGroupMnemonic,
+  onOpenDimConfig,
 }: SegmentTreeProps) {
   const [addingGroup, setAddingGroup] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
@@ -241,12 +265,15 @@ export function SegmentTree({
             key={group.id}
             group={group}
             selectedSegmentId={selectedSegmentId}
+            isGroupSelected={selectedGroupId === group.id}
             onSelectSegment={onSelectSegment}
+            onSelectGroup={onSelectGroup}
             onRemoveGroup={onRemoveGroup}
             onAddSegment={onAddSegment}
             onRenameSegment={onRenameSegment}
             onDeleteSegment={onDeleteSegment}
             onUpdateGroupMnemonic={onUpdateGroupMnemonic}
+            onOpenDimConfig={onOpenDimConfig}
           />
         ))}
 

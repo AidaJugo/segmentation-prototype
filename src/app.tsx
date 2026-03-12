@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { Routes, Route } from 'react-router-dom'
-import { FolderOpen, Settings, AlertCircle, TableProperties, SlidersHorizontal, CircleOff } from 'lucide-react'
+import { FolderOpen, AlertCircle, TableProperties, SlidersHorizontal, CircleOff, TrendingUp } from 'lucide-react'
 import { SidebarNav } from './components/layout/sidebar-nav'
 import { PageHeader } from './components/layout/page-header'
 import { SegmentTree } from './components/tree/segment-tree'
@@ -20,26 +20,19 @@ import { ruleHasConditions } from './types'
 const allDimensions = dimensionsData as Dimension[]
 const instruments = instrumentsData as Instrument[]
 
-function ParentNodeMessage({ segmentName }: { segmentName: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-surface-500 p-8">
-      <FolderOpen size={40} className="mb-3 opacity-50" />
-      <p className="text-sm text-center font-medium text-surface-600 mb-1">{segmentName}</p>
-      <p className="text-sm text-center">This is a group node. Select a leaf segment below to define mapping.</p>
-    </div>
-  )
-}
-
 function ApproachLayout() {
   const store = useSegmentStore()
   const timing = useTimingStore()
   const [showOverlaps, setShowOverlaps] = useState(false)
   const [showDimConfig, setShowDimConfig] = useState(false)
   const [showFirstTimeDimSelector, setShowFirstTimeDimSelector] = useState(false)
-  const [activeTab, setActiveTab] = useState<'instruments' | 'unassigned' | 'rules'>('rules')
+  const [activeTab, setActiveTab] = useState<'instruments' | 'rules'>('rules')
+  const [groupTab, setGroupTab] = useState<'unassigned' | 'coverage'>('coverage')
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
 
-  const activeGroup = store.selectedGroup
-  const groupHasDimensions = activeGroup && activeGroup.selectedDimensionIds.length > 0
+  const activeGroup = selectedGroupId
+    ? store.groups.find(g => g.id === selectedGroupId) ?? store.selectedGroup
+    : store.selectedGroup
 
   const dimensions = useMemo(() => {
     if (!activeGroup) return []
@@ -69,7 +62,10 @@ function ApproachLayout() {
     [allSavedRules, bucketDefinitions]
   )
 
-  const groupHasSavedRules = allSavedRules.length > 0
+  const segmentSummary = useMemo(
+    () => computeBalanceSummary(instruments, savedRule, allSavedRules, bucketDefinitions),
+    [savedRule, allSavedRules, bucketDefinitions]
+  )
 
   const overlaps = useMemo(
     () => findOverlappingInstruments(instruments, allSavedRules, bucketDefinitions),
@@ -107,6 +103,7 @@ function ApproachLayout() {
   }, [store])
 
   const handleSelectSegment = useCallback((id: string) => {
+    setSelectedGroupId(null)
     store.setSelectedSegmentId(id)
     const seg = store.allSegments[id]
     if (seg?.isLeaf) {
@@ -119,6 +116,20 @@ function ApproachLayout() {
       }
     }
   }, [store, timing])
+
+  const handleSelectGroup = useCallback((groupId: string) => {
+    setSelectedGroupId(groupId)
+    store.setSelectedSegmentId(null as unknown as string)
+    setGroupTab('coverage')
+  }, [store])
+
+  const handleOpenDimConfig = useCallback((groupId: string) => {
+    const group = store.groups.find(g => g.id === groupId)
+    if (group) {
+      setSelectedGroupId(groupId)
+      setShowDimConfig(true)
+    }
+  }, [store])
 
   const handleToggleDimension = useCallback((dimId: number) => {
     if (!activeGroup) return
@@ -137,20 +148,39 @@ function ApproachLayout() {
 
   const isParentSelected = store.selectedSegment && !store.selectedSegment.isLeaf
   const segmentForPanel = store.selectedSegment?.isLeaf ? store.selectedSegment : null
+  const showGroupView = selectedGroupId !== null && !segmentForPanel
 
   if (showDimConfig && activeGroup) {
     const selectedIds = new Set(activeGroup.selectedDimensionIds)
     return (
       <div className="flex flex-col flex-1 min-h-0">
         <PageHeader title="Loan IQ - Segmentation" />
-        <DimensionSelector
-          dimensions={allDimensions}
-          selectedIds={selectedIds}
-          bucketDefinitions={activeGroup.bucketDefinitions}
-          onToggle={handleToggleDimension}
-          onSetBuckets={handleSetBuckets}
-          onClose={handleDimConfigDone}
-        />
+        <div className="flex flex-1 min-h-0">
+          <SegmentTree
+            groups={store.groups}
+            selectedSegmentId={store.selectedSegmentId}
+            selectedGroupId={selectedGroupId}
+            onSelectSegment={handleSelectSegment}
+            onSelectGroup={handleSelectGroup}
+            onAddGroup={store.addGroup}
+            onRemoveGroup={store.removeGroup}
+            onAddSegment={store.addSegment}
+            onRenameSegment={store.renameSegment}
+            onDeleteSegment={store.removeSegment}
+            onUpdateGroupMnemonic={store.updateGroupMnemonic}
+            onOpenDimConfig={handleOpenDimConfig}
+          />
+          <div className="flex-1 min-h-0">
+            <DimensionSelector
+              dimensions={allDimensions}
+              selectedIds={selectedIds}
+              bucketDefinitions={activeGroup.bucketDefinitions}
+              onToggle={handleToggleDimension}
+              onSetBuckets={handleSetBuckets}
+              onClose={handleDimConfigDone}
+            />
+          </div>
+        </div>
       </div>
     )
   }
@@ -164,13 +194,16 @@ function ApproachLayout() {
           <SegmentTree
             groups={store.groups}
             selectedSegmentId={store.selectedSegmentId}
+            selectedGroupId={selectedGroupId}
             onSelectSegment={handleSelectSegment}
+            onSelectGroup={handleSelectGroup}
             onAddGroup={store.addGroup}
             onRemoveGroup={store.removeGroup}
             onAddSegment={store.addSegment}
             onRenameSegment={store.renameSegment}
             onDeleteSegment={store.removeSegment}
             onUpdateGroupMnemonic={store.updateGroupMnemonic}
+            onOpenDimConfig={handleOpenDimConfig}
           />
           <div className="flex-1 min-h-0">
             <DimensionSelector
@@ -190,37 +223,84 @@ function ApproachLayout() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <PageHeader title="Loan IQ - Segmentation">
-        {groupHasDimensions && (
-          <button
-            type="button"
-            onClick={() => setShowDimConfig(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-surface-600 hover:text-surface-800 bg-surface-100 hover:bg-surface-200 rounded transition-colors"
-          >
-            <Settings size={14} />
-            Dimensions ({dimensions.length})
-          </button>
-        )}
-      </PageHeader>
+      <PageHeader title="Loan IQ - Segmentation" />
 
       <div className="flex flex-1 min-h-0">
         <SegmentTree
           groups={store.groups}
           selectedSegmentId={store.selectedSegmentId}
+          selectedGroupId={selectedGroupId}
           onSelectSegment={handleSelectSegment}
+          onSelectGroup={handleSelectGroup}
           onAddGroup={store.addGroup}
           onRemoveGroup={store.removeGroup}
           onAddSegment={store.addSegment}
           onRenameSegment={store.renameSegment}
           onDeleteSegment={store.removeSegment}
           onUpdateGroupMnemonic={store.updateGroupMnemonic}
+          onOpenDimConfig={handleOpenDimConfig}
         />
 
         <div className="flex flex-col flex-1 min-h-0">
           {isParentSelected ? (
-            <div className="flex-1 overflow-y-auto p-4">
-              <ParentNodeMessage segmentName={store.selectedSegment!.name} />
+            <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-surface-500 p-8">
+              <FolderOpen size={40} className="mb-3 opacity-50" />
+              <p className="text-sm text-center font-medium text-surface-600 mb-1">{store.selectedSegment!.name}</p>
+              <p className="text-sm text-center">This is a group node. Select a leaf segment below to define mapping.</p>
             </div>
+          ) : showGroupView ? (
+            <>
+              <div className="flex items-center border-b border-surface-200 px-4 pt-3 gap-1" role="tablist">
+                <button
+                  role="tab"
+                  aria-selected={groupTab === 'coverage'}
+                  onClick={() => setGroupTab('coverage')}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-t-md border border-b-0 transition-colors ${
+                    groupTab === 'coverage'
+                      ? 'bg-white text-primary-700 border-surface-200'
+                      : 'bg-surface-50 text-surface-500 border-transparent hover:text-surface-700'
+                  }`}
+                >
+                  <TrendingUp size={14} />
+                  Coverage
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={groupTab === 'unassigned'}
+                  onClick={() => setGroupTab('unassigned')}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-t-md border border-b-0 transition-colors ${
+                    groupTab === 'unassigned'
+                      ? 'bg-white text-primary-700 border-surface-200'
+                      : 'bg-surface-50 text-surface-500 border-transparent hover:text-surface-700'
+                  }`}
+                >
+                  <CircleOff size={14} />
+                  Unassigned
+                  {unassignedInstruments.length > 0 && (
+                    <span className="text-xs text-surface-400">({unassignedInstruments.length})</span>
+                  )}
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                {groupTab === 'unassigned' ? (
+                  <UnassignedView
+                    instruments={unassignedInstruments}
+                    dimensions={dimensions}
+                    inline
+                  />
+                ) : (
+                  <div className="p-6">
+                    <BalancePreview
+                      summary={groupSummary}
+                      overlapCount={overlaps.length}
+                      onShowUnassigned={() => setGroupTab('unassigned')}
+                      onShowOverlaps={() => setShowOverlaps(true)}
+                    />
+                  </div>
+                )}
+              </div>
+            </>
           ) : segmentForPanel ? (
             <>
               {ruleHasConditions(segmentForPanel.savedRule) && (
@@ -237,22 +317,6 @@ function ApproachLayout() {
                   >
                     <TableProperties size={14} />
                     Instruments
-                  </button>
-                  <button
-                    role="tab"
-                    aria-selected={activeTab === 'unassigned'}
-                    onClick={() => setActiveTab('unassigned')}
-                    className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-t-md border border-b-0 transition-colors ${
-                      activeTab === 'unassigned'
-                        ? 'bg-white text-primary-700 border-surface-200'
-                        : 'bg-surface-50 text-surface-500 border-transparent hover:text-surface-700'
-                    }`}
-                  >
-                    <CircleOff size={14} />
-                    Unassigned
-                    {unassignedInstruments.length > 0 && (
-                      <span className="text-xs text-surface-400">({unassignedInstruments.length})</span>
-                    )}
                   </button>
                   <button
                     role="tab"
@@ -290,12 +354,6 @@ function ApproachLayout() {
                       startExpanded
                     />
                   </div>
-                ) : activeTab === 'unassigned' && ruleHasConditions(segmentForPanel.savedRule) ? (
-                  <UnassignedView
-                    instruments={unassignedInstruments}
-                    dimensions={dimensions}
-                    inline
-                  />
                 ) : (
                   <div className="p-4">
                     <RuleBuilderPanel
@@ -311,6 +369,26 @@ function ApproachLayout() {
                 )}
               </div>
 
+              {ruleHasConditions(segmentForPanel.savedRule) && (
+                <div className="border-t border-surface-200 bg-surface-50 px-4 py-2 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <span className="text-xs font-medium text-surface-500">This segment:</span>
+                    <span className="text-xs text-surface-700 font-semibold">
+                      {segmentSummary.matchedCount.toLocaleString()} instruments
+                    </span>
+                    <span className="text-xs text-surface-600">
+                      ${segmentSummary.matchedBalance >= 1_000_000
+                        ? `${(segmentSummary.matchedBalance / 1_000_000).toFixed(1)}M`
+                        : segmentSummary.matchedBalance >= 1_000
+                          ? `${(segmentSummary.matchedBalance / 1_000).toFixed(0)}K`
+                          : segmentSummary.matchedBalance.toFixed(0)}
+                    </span>
+                    <span className="text-xs text-surface-400">
+                      ({segmentSummary.matchedPercent.toFixed(1)}% of portfolio)
+                    </span>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="flex-1 overflow-y-auto p-4">
@@ -324,17 +402,6 @@ function ApproachLayout() {
                 onMnemonicChange={handleMnemonicChange}
               />
             </div>
-          )}
-
-          {groupHasSavedRules && (
-            <BalancePreview
-              summary={groupSummary}
-              overlapCount={overlaps.length}
-              onShowUnassigned={() => {
-                if (segmentForPanel) setActiveTab('unassigned')
-              }}
-              onShowOverlaps={() => setShowOverlaps(true)}
-            />
           )}
         </div>
       </div>

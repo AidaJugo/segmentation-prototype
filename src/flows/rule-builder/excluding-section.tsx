@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { Plus, Info } from 'lucide-react'
 import type { Condition, Dimension, BucketDefinition } from '../../types'
 import { ConditionRow } from './condition-row'
 import { summarizeCondition } from './summarize-condition'
@@ -8,6 +8,7 @@ interface ExcludingSectionProps {
   dimensions: Dimension[]
   bucketDefinitions?: Record<number, BucketDefinition[]>
   newExclusionIds?: Set<string>
+  hasOverlapResolutions?: boolean
   onAdd: () => void
   onChange: (index: number, condition: Condition) => void
   onRemove: (index: number) => void
@@ -18,6 +19,7 @@ export function ExcludingSection({
   dimensions,
   bucketDefinitions = {},
   newExclusionIds,
+  hasOverlapResolutions,
   onAdd,
   onChange,
   onRemove,
@@ -30,6 +32,13 @@ export function ExcludingSection({
           Exclude specific instruments from the matched set above.
         </p>
       </div>
+
+      {hasOverlapResolutions && (
+        <div className="flex items-start gap-2 px-3 py-2 mb-3 text-xs bg-blue-50 border border-blue-200 rounded-md text-blue-700">
+          <Info size={14} className="shrink-0 mt-0.5" />
+          <span>Exclusion rules from overlapping instrument resolution applied here.</span>
+        </div>
+      )}
 
       {exclusions.length === 0 ? (
         <button
