@@ -366,6 +366,7 @@ function ApproachLayout() {
           overlaps={overlaps}
           instruments={instruments}
           segments={store.allSegments}
+          dimensions={dimensions}
           onClose={() => setShowOverlaps(false)}
         />
       )}
