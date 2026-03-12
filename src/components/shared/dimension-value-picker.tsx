@@ -2,18 +2,12 @@ import { useState, useRef, useEffect } from 'react'
 import { ChevronDown } from 'lucide-react'
 import type { Dimension, Operator, BucketDefinition } from '../../types'
 
-interface ClaimedValue {
-  value: string
-  segmentName: string
-}
-
 interface DimensionValuePickerProps {
   dimension: Dimension
   operator: Operator
   selectedValues: string[]
   numericRange?: { min: number; max: number }
   bucketDefinitions?: BucketDefinition[]
-  claimedValues?: ClaimedValue[]
   onValuesChange: (values: string[]) => void
   onRangeChange: (range: { min: number; max: number }) => void
   onOperatorChange: (op: Operator) => void
@@ -41,16 +35,13 @@ function ValueDropdown({
   values,
   labels,
   selectedValues,
-  claimedValues,
   onValuesChange,
 }: {
   values: string[]
   labels?: string[]
   selectedValues: string[]
-  claimedValues?: ClaimedValue[]
   onValuesChange: (values: string[]) => void
 }) {
-  const claimedMap = new Map(claimedValues?.map(c => [c.value, c.segmentName]) ?? [])
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const ref = useRef<HTMLDivElement>(null)
@@ -111,21 +102,14 @@ function ValueDropdown({
             {filteredValues.map(value => {
               const idx = values.indexOf(value)
               const displayLabel = labels && idx >= 0 ? labels[idx] : value
-              const claimedBy = claimedMap.get(value)
               return (
                 <label
                   key={value}
-                  className={`flex items-center gap-2 px-2.5 py-1.5 text-sm ${
-                    claimedBy
-                      ? 'text-surface-400 cursor-not-allowed'
-                      : 'text-surface-700 hover:bg-surface-50 cursor-pointer'
-                  }`}
-                  title={claimedBy ? `Used by ${claimedBy}` : undefined}
+                  className="flex items-center gap-2 px-2.5 py-1.5 text-sm text-surface-700 hover:bg-surface-50 cursor-pointer"
                 >
                   <input
                     type="checkbox"
                     checked={selectedValues.includes(value)}
-                    disabled={!!claimedBy}
                     onChange={e => {
                       if (e.target.checked) {
                         onValuesChange([...selectedValues, value])
@@ -136,9 +120,6 @@ function ValueDropdown({
                     className="rounded border-surface-300"
                   />
                   <span className="flex-1 truncate">{displayLabel}</span>
-                  {claimedBy && (
-                    <span className="text-[10px] text-surface-400 shrink-0">{claimedBy}</span>
-                  )}
                 </label>
               )
             })}
@@ -178,7 +159,6 @@ export function DimensionValuePicker({
   selectedValues,
   numericRange,
   bucketDefinitions,
-  claimedValues,
   onValuesChange,
   onRangeChange,
   onOperatorChange,
@@ -209,7 +189,6 @@ export function DimensionValuePicker({
           values={bucketNames}
           labels={bucketLabels}
           selectedValues={selectedValues}
-          claimedValues={claimedValues}
           onValuesChange={onValuesChange}
         />
         <div className="text-xs text-surface-400">
@@ -237,7 +216,6 @@ export function DimensionValuePicker({
         <ValueDropdown
           values={dimension.values}
           selectedValues={selectedValues}
-          claimedValues={claimedValues}
           onValuesChange={onValuesChange}
         />
       </div>

@@ -7,7 +7,6 @@ interface ConditionRowProps {
   condition: Condition
   dimensions: Dimension[]
   bucketDefinitions?: Record<number, BucketDefinition[]>
-  claimedValues?: Record<number, { value: string; segmentName: string }[]>
   onChange: (condition: Condition) => void
   onRemove: () => void
   variant?: 'default' | 'exception'
@@ -22,7 +21,6 @@ export function ConditionRow({
   condition,
   dimensions,
   bucketDefinitions = {},
-  claimedValues = {},
   onChange,
   onRemove,
   variant = 'default',
@@ -122,7 +120,6 @@ export function ConditionRow({
             selectedValues={condition.values}
             numericRange={condition.numericRange}
             bucketDefinitions={bucketDefinitions[selectedDim.dimensionId]}
-            claimedValues={claimedValues[selectedDim.dimensionId]}
             onValuesChange={handleValuesChange}
             onRangeChange={handleRangeChange}
             onOperatorChange={handleOperatorChange}

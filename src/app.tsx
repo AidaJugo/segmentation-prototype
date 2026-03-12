@@ -58,28 +58,6 @@ function ApproachLayout() {
   const savedRule = store.selectedSegment?.savedRule ?? null
   const currentRule = store.selectedSegment?.rule ?? null
 
-  const claimedValues = useMemo(() => {
-    const result: Record<number, { value: string; segmentName: string }[]> = {}
-    const currentId = store.selectedSegmentId
-    for (const seg of Object.values(store.allSegments)) {
-      if (seg.id === currentId) continue
-      const rule = seg.savedRule
-      if (!rule) continue
-      for (const group of rule.groups) {
-        for (const cond of group.conditions) {
-          if (cond.values.length === 0) continue
-          if (!result[cond.dimensionId]) result[cond.dimensionId] = []
-          for (const val of cond.values) {
-            if (!result[cond.dimensionId].some(e => e.value === val)) {
-              result[cond.dimensionId].push({ value: val, segmentName: seg.name })
-            }
-          }
-        }
-      }
-    }
-    return result
-  }, [store.allSegments, store.selectedSegmentId])
-
   const hasUnsavedChanges = useMemo(() => {
     if (!currentRule && !savedRule) return false
     if (!currentRule || !savedRule) return true
@@ -322,7 +300,6 @@ function ApproachLayout() {
                       segment={segmentForPanel}
                       dimensions={dimensions}
                       bucketDefinitions={bucketDefinitions}
-                      claimedValues={claimedValues}
                       rule={segmentForPanel.rule ?? null}
                       onRuleChange={handleRuleChange}
                       onSave={handleSaveRule}
@@ -350,7 +327,6 @@ function ApproachLayout() {
                 segment={null}
                 dimensions={dimensions}
                 bucketDefinitions={bucketDefinitions}
-                claimedValues={claimedValues}
                 rule={null}
                 onRuleChange={handleRuleChange}
                 onSave={handleSaveRule}

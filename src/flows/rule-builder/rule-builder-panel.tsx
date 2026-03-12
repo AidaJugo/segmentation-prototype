@@ -33,7 +33,6 @@ interface RuleBuilderPanelProps {
   rule: SegmentRule | null
   dimensions: Dimension[]
   bucketDefinitions?: Record<number, BucketDefinition[]>
-  claimedValues?: Record<number, { value: string; segmentName: string }[]>
   onRuleChange: (rule: SegmentRule) => void
   onSave?: () => void
   onMnemonicChange?: (mnemonic: string) => void
@@ -44,7 +43,6 @@ export function RuleBuilderPanel({
   rule,
   dimensions,
   bucketDefinitions = {},
-  claimedValues = {},
   onRuleChange,
   onSave,
   onMnemonicChange,
@@ -282,7 +280,6 @@ export function RuleBuilderPanel({
                           condition={cond}
                           dimensions={dimensions}
                           bucketDefinitions={bucketDefinitions}
-                          claimedValues={claimedValues}
                           onChange={c => handleConditionChange(gi, ci, c)}
                           onRemove={() => handleRemoveCondition(gi, ci)}
                           summary={summarizeCondition(cond, dimensions)}
