@@ -202,19 +202,25 @@ function UnassignedContent({ instruments, dimensions }: { instruments: Instrumen
               <thead className="bg-surface-50 sticky top-0">
                 <tr>
                   <th className="text-left px-3 py-2 text-xs font-medium text-surface-500">ID</th>
-                  <th className="text-left px-3 py-2 text-xs font-medium text-surface-500">Product</th>
-                  <th className="text-left px-3 py-2 text-xs font-medium text-surface-500">Branch</th>
-                  <th className="text-left px-3 py-2 text-xs font-medium text-surface-500">Amortization</th>
+                  {dimensions.filter(d => d.segmentable).slice(0, 8).map(dim => (
+                    <th key={dim.dimensionId} className="text-left px-3 py-2 text-xs font-medium text-surface-500 whitespace-nowrap">
+                      {dim.dimensionName}
+                    </th>
+                  ))}
                   <th className="text-right px-3 py-2 text-xs font-medium text-surface-500">Balance</th>
                 </tr>
               </thead>
               <tbody>
                 {instruments.slice(0, 200).map(inst => (
                   <tr key={inst.id} className="border-t border-surface-100 hover:bg-surface-50">
-                    <td className="px-3 py-1.5 text-surface-600">{inst.id}</td>
-                    <td className="px-3 py-1.5 text-surface-700">{inst.productCode as string}</td>
-                    <td className="px-3 py-1.5 text-surface-600">{inst.branchCode as string}</td>
-                    <td className="px-3 py-1.5 text-surface-600">{inst.amortizationCode as string}</td>
+                    <td className="px-3 py-1.5 text-surface-600 tabular-nums">{inst.id}</td>
+                    {dimensions.filter(d => d.segmentable).slice(0, 8).map(dim => (
+                      <td key={dim.dimensionId} className="px-3 py-1.5 text-surface-700 whitespace-nowrap">
+                        {inst[dim.dimensionColumn] !== null && inst[dim.dimensionColumn] !== undefined
+                          ? String(inst[dim.dimensionColumn])
+                          : <span className="text-surface-300">null</span>}
+                      </td>
+                    ))}
                     <td className="px-3 py-1.5 text-right text-surface-700 font-mono">{formatCurrency(inst.balance)}</td>
                   </tr>
                 ))}
