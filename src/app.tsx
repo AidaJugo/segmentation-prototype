@@ -64,11 +64,6 @@ function ApproachLayout() {
     return JSON.stringify(currentRule) !== JSON.stringify(savedRule)
   }, [currentRule, savedRule])
 
-  const segmentSummary = useMemo(
-    () => computeBalanceSummary(instruments, savedRule, allSavedRules, bucketDefinitions),
-    [savedRule, allSavedRules, bucketDefinitions]
-  )
-
   const groupSummary = useMemo(
     () => computeBalanceSummary(instruments, null, allSavedRules, bucketDefinitions),
     [allSavedRules, bucketDefinitions]
@@ -316,17 +311,6 @@ function ApproachLayout() {
                 )}
               </div>
 
-              {ruleHasConditions(segmentForPanel.savedRule) && (
-                <div className={hasUnsavedChanges ? 'opacity-50' : ''}>
-                  <BalancePreview
-                    summary={segmentSummary}
-                    segmentName={segmentForPanel.name}
-                    overlapCount={overlaps.length}
-                    onShowUnassigned={() => setActiveTab('unassigned')}
-                    onShowOverlaps={() => setShowOverlaps(true)}
-                  />
-                </div>
-              )}
             </>
           ) : (
             <div className="flex-1 overflow-y-auto p-4">

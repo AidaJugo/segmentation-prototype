@@ -105,7 +105,7 @@ test.describe('Prototype Flow', () => {
     await expect(page.getByText('Groups are connected by OR')).toBeVisible()
 
     await page.getByRole('button', { name: 'Save Rules' }).click()
-    await expect(page.getByText('This Segment', { exact: true })).toBeVisible()
+    await expect(page.getByText('Portfolio Coverage').first()).toBeVisible()
   })
 
   test('exception section has description text', async ({ page }) => {

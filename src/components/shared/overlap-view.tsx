@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { X, AlertTriangle, Check } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { X, AlertTriangle, Check, Info } from 'lucide-react'
 import type { Instrument, Segment, Dimension } from '../../types'
 
 interface OverlapEntry {
@@ -29,8 +29,10 @@ export function OverlapView({ overlaps, instruments, segments, dimensions, onClo
   const displayDims = dimensions.filter(d => d.segmentable).slice(0, 4)
 
   const [resolved, setResolved] = useState<Record<number, string>>({})
+  const [applied, setApplied] = useState(false)
 
   const handleAssign = (instrumentId: number, segmentId: string) => {
+    if (applied) return
     setResolved(prev => {
       if (prev[instrumentId] === segmentId) {
         const next = { ...prev }
@@ -43,6 +45,23 @@ export function OverlapView({ overlaps, instruments, segments, dimensions, onClo
 
   const resolvedCount = Object.keys(resolved).length
   const unresolvedCount = overlaps.length - resolvedCount
+
+  const affectedSegments = useMemo(() => {
+    if (resolvedCount === 0) return []
+    const losers = new Map<string, number>()
+    for (const overlap of overlaps) {
+      const winnerId = resolved[overlap.instrumentId]
+      if (!winnerId) continue
+      for (const sid of overlap.segmentIds) {
+        if (sid === winnerId) continue
+        losers.set(sid, (losers.get(sid) ?? 0) + 1)
+      }
+    }
+    return [...losers.entries()].map(([segId, count]) => ({
+      name: segments[segId]?.name ?? segId,
+      count,
+    }))
+  }, [resolved, resolvedCount, overlaps, segments])
 
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
@@ -125,13 +144,14 @@ export function OverlapView({ overlaps, instruments, segments, dimensions, onClo
                               key={sid}
                               type="button"
                               onClick={() => handleAssign(o.instrumentId, sid)}
+                              disabled={applied}
                               className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all ${
                                 isChosen
                                   ? 'bg-primary-600 text-white shadow-sm'
                                   : isResolved
                                     ? 'bg-surface-100 text-surface-400 hover:bg-surface-200 hover:text-surface-600'
                                     : 'bg-surface-200 text-surface-700 hover:bg-surface-300 cursor-pointer'
-                              }`}
+                              } ${applied ? 'cursor-default' : ''}`}
                               title={`Assign to ${seg?.name ?? sid}`}
                             >
                               {isChosen && <Check size={10} />}
@@ -148,26 +168,48 @@ export function OverlapView({ overlaps, instruments, segments, dimensions, onClo
           </table>
         </div>
 
+        {applied && affectedSegments.length > 0 && (
+          <div className="px-6 py-3 border-t border-blue-100 bg-blue-50/50">
+            <div className="flex items-start gap-2">
+              <Info size={14} className="text-blue-500 mt-0.5 shrink-0" />
+              <div className="text-xs text-blue-700">
+                <p className="font-medium mb-1">Exclusion rules would be appended to:</p>
+                <ul className="space-y-0.5">
+                  {affectedSegments.map(s => (
+                    <li key={s.name}>
+                      <span className="font-medium">{s.name}</span> — {s.count} instrument{s.count !== 1 ? 's' : ''} removed via new exclusion rule
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="px-6 py-3 border-t border-surface-200 bg-surface-50 rounded-b-xl flex items-center justify-between">
           <p className="text-xs text-surface-500">
-            {resolvedCount > 0
-              ? `${resolvedCount} of ${overlaps.length} overlaps resolved.${unresolvedCount === 0 ? ' All overlaps addressed.' : ''}`
-              : `${overlaps.length} overlap${overlaps.length !== 1 ? 's' : ''} to resolve.`}
+            {applied
+              ? 'Assignments applied. Exclusion rules noted above.'
+              : resolvedCount > 0
+                ? `${resolvedCount} of ${overlaps.length} overlaps resolved.${unresolvedCount === 0 ? ' All overlaps addressed.' : ''}`
+                : `${overlaps.length} overlap${overlaps.length !== 1 ? 's' : ''} to resolve.`}
           </p>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-surface-400">
-              Assignments are visual only in this prototype.
-            </span>
+            {!applied && resolvedCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setApplied(true)}
+                className="px-4 py-1.5 text-xs font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+              >
+                Apply
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}
-              className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                resolvedCount > 0
-                  ? 'bg-primary-600 text-white hover:bg-primary-700'
-                  : 'bg-surface-200 text-surface-600 hover:bg-surface-300'
-              }`}
+              className="px-4 py-1.5 text-xs font-medium rounded-md bg-surface-200 text-surface-600 hover:bg-surface-300 transition-colors"
             >
-              {resolvedCount > 0 ? 'Save & Close' : 'Close'}
+              Close
             </button>
           </div>
         </div>
