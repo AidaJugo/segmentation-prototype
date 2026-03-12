@@ -31,7 +31,14 @@ export function OverlapView({ overlaps, instruments, segments, dimensions, onClo
   const [resolved, setResolved] = useState<Record<number, string>>({})
 
   const handleAssign = (instrumentId: number, segmentId: string) => {
-    setResolved(prev => ({ ...prev, [instrumentId]: segmentId }))
+    setResolved(prev => {
+      if (prev[instrumentId] === segmentId) {
+        const next = { ...prev }
+        delete next[instrumentId]
+        return next
+      }
+      return { ...prev, [instrumentId]: segmentId }
+    })
   }
 
   const resolvedCount = Object.keys(resolved).length
@@ -40,31 +47,31 @@ export function OverlapView({ overlaps, instruments, segments, dimensions, onClo
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-2xl w-[880px] max-h-[85vh] flex flex-col mx-6">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-red-100 bg-red-50/50 rounded-t-xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-200">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-              <AlertTriangle size={16} className="text-red-600" />
+            <div className="w-8 h-8 rounded-full bg-surface-100 flex items-center justify-center">
+              <AlertTriangle size={16} className="text-surface-500" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-red-900">Overlapping Instruments</h3>
-              <p className="text-xs text-red-700/70">
+              <h3 className="text-sm font-semibold text-surface-800">Overlapping Instruments</h3>
+              <p className="text-xs text-surface-500">
                 {overlaps.length} instrument{overlaps.length !== 1 ? 's' : ''} assigned to multiple segments
                 {' '}&middot;{' '}{formatCurrency(totalBalance)} total balance
                 {resolvedCount > 0 && (
-                  <span className="ml-2 text-green-700">
+                  <span className="ml-2 text-green-600">
                     ({resolvedCount} resolved, {unresolvedCount} remaining)
                   </span>
                 )}
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-red-100 transition-colors">
-            <X size={16} className="text-red-400" />
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-100 transition-colors">
+            <X size={16} className="text-surface-400" />
           </button>
         </div>
 
-        <div className="px-6 py-3 border-b border-surface-200 bg-surface-50">
-          <p className="text-xs text-surface-600">
+        <div className="px-6 py-3 border-b border-surface-100 bg-surface-50/50">
+          <p className="text-xs text-surface-500">
             Each instrument below matches rules in multiple segments. Click a segment name to assign the instrument to that segment only.
           </p>
         </div>
@@ -93,8 +100,8 @@ export function OverlapView({ overlaps, instruments, segments, dimensions, onClo
                     key={o.instrumentId}
                     className={`border-t transition-colors ${
                       isResolved
-                        ? 'bg-green-50/50 border-green-100'
-                        : 'border-red-100 hover:bg-red-50/30'
+                        ? 'bg-green-50/40 border-surface-100'
+                        : 'border-surface-100 hover:bg-surface-50/50'
                     }`}
                   >
                     <td className="pl-6 pr-3 py-2.5 text-surface-600 tabular-nums">{inst.id}</td>
@@ -120,10 +127,10 @@ export function OverlapView({ overlaps, instruments, segments, dimensions, onClo
                               onClick={() => handleAssign(o.instrumentId, sid)}
                               className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all ${
                                 isChosen
-                                  ? 'bg-green-600 text-white shadow-sm'
+                                  ? 'bg-primary-600 text-white shadow-sm'
                                   : isResolved
-                                    ? 'bg-surface-100 text-surface-400 hover:bg-surface-200'
-                                    : 'bg-red-100 text-red-800 border border-red-200 hover:bg-red-200 cursor-pointer'
+                                    ? 'bg-surface-100 text-surface-400 hover:bg-surface-200 hover:text-surface-600'
+                                    : 'bg-surface-200 text-surface-700 hover:bg-surface-300 cursor-pointer'
                               }`}
                               title={`Assign to ${seg?.name ?? sid}`}
                             >
@@ -141,17 +148,29 @@ export function OverlapView({ overlaps, instruments, segments, dimensions, onClo
           </table>
         </div>
 
-        {resolvedCount > 0 && (
-          <div className="px-6 py-3 border-t border-surface-200 bg-surface-50 rounded-b-xl flex items-center justify-between">
-            <p className="text-xs text-surface-600">
-              {resolvedCount} of {overlaps.length} overlaps resolved.
-              {unresolvedCount === 0 && ' All overlaps addressed.'}
-            </p>
-            <p className="text-xs text-surface-400">
+        <div className="px-6 py-3 border-t border-surface-200 bg-surface-50 rounded-b-xl flex items-center justify-between">
+          <p className="text-xs text-surface-500">
+            {resolvedCount > 0
+              ? `${resolvedCount} of ${overlaps.length} overlaps resolved.${unresolvedCount === 0 ? ' All overlaps addressed.' : ''}`
+              : `${overlaps.length} overlap${overlaps.length !== 1 ? 's' : ''} to resolve.`}
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-surface-400">
               Assignments are visual only in this prototype.
-            </p>
+            </span>
+            <button
+              type="button"
+              onClick={onClose}
+              className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                resolvedCount > 0
+                  ? 'bg-primary-600 text-white hover:bg-primary-700'
+                  : 'bg-surface-200 text-surface-600 hover:bg-surface-300'
+              }`}
+            >
+              {resolvedCount > 0 ? 'Save & Close' : 'Close'}
+            </button>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )

@@ -118,11 +118,11 @@ export function BalancePreview({ summary, segmentName, overlapCount = 0, onShowU
       {overlapCount > 0 && (
         <button
           onClick={onShowOverlaps}
-          className="flex items-center gap-1.5 mt-2 px-2 py-1.5 w-full bg-amber-50 border border-amber-200 rounded text-xs text-amber-700 hover:bg-amber-100 transition-colors cursor-pointer text-left"
+          className="flex items-center gap-1.5 mt-2 px-2 py-1.5 w-full bg-red-50 border border-red-200 rounded text-xs text-red-700 hover:bg-red-100 transition-colors cursor-pointer text-left"
         >
           <AlertCircle size={12} className="shrink-0" />
           <span>{overlapCount} instrument{overlapCount > 1 ? 's' : ''} assigned to multiple segments</span>
-          <span className="ml-auto text-amber-500 underline">View details</span>
+          <span className="ml-auto text-red-500 underline">View details</span>
         </button>
       )}
     </div>

@@ -158,7 +158,7 @@ test.describe('Prototype Flow', () => {
   })
 
   test('balance preview hidden until rules are saved', async ({ page }) => {
-    await expect(page.getByText('Total Portfolio', { exact: true })).not.toBeVisible()
+    await expect(page.getByText('Portfolio Coverage').first()).not.toBeVisible()
 
     await createGroupAndSegment(page)
     await page.getByText('Fixed Rate Loans', { exact: true }).click()
@@ -169,11 +169,11 @@ test.describe('Prototype Flow', () => {
     const firstCheckbox = page.locator('.absolute .max-h-\\[180px\\] label').first()
     await firstCheckbox.click()
 
-    await expect(page.getByText('Total Portfolio', { exact: true })).not.toBeVisible()
+    await expect(page.getByText('Portfolio Coverage').first()).not.toBeVisible()
 
     await page.getByRole('button', { name: 'Save Rules' }).click()
-    await expect(page.getByText('Total Portfolio', { exact: true })).toBeVisible()
-    await expect(page.getByText('1,000 instruments', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('Portfolio Coverage').first()).toBeVisible()
+    await expect(page.getByText(/1,000 instruments/i).first()).toBeVisible()
   })
 
   test('group mnemonic is editable', async ({ page }) => {

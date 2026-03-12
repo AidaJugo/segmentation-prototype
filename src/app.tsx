@@ -64,10 +64,17 @@ function ApproachLayout() {
     return JSON.stringify(currentRule) !== JSON.stringify(savedRule)
   }, [currentRule, savedRule])
 
-  const summary = useMemo(
+  const segmentSummary = useMemo(
     () => computeBalanceSummary(instruments, savedRule, allSavedRules, bucketDefinitions),
     [savedRule, allSavedRules, bucketDefinitions]
   )
+
+  const groupSummary = useMemo(
+    () => computeBalanceSummary(instruments, null, allSavedRules, bucketDefinitions),
+    [allSavedRules, bucketDefinitions]
+  )
+
+  const groupHasSavedRules = allSavedRules.length > 0
 
   const overlaps = useMemo(
     () => findOverlappingInstruments(instruments, allSavedRules, bucketDefinitions),
@@ -312,7 +319,7 @@ function ApproachLayout() {
               {ruleHasConditions(segmentForPanel.savedRule) && (
                 <div className={hasUnsavedChanges ? 'opacity-50' : ''}>
                   <BalancePreview
-                    summary={summary}
+                    summary={segmentSummary}
                     segmentName={segmentForPanel.name}
                     overlapCount={overlaps.length}
                     onShowUnassigned={() => setActiveTab('unassigned')}
@@ -333,6 +340,17 @@ function ApproachLayout() {
                 onMnemonicChange={handleMnemonicChange}
               />
             </div>
+          )}
+
+          {groupHasSavedRules && (
+            <BalancePreview
+              summary={groupSummary}
+              overlapCount={overlaps.length}
+              onShowUnassigned={() => {
+                if (segmentForPanel) setActiveTab('unassigned')
+              }}
+              onShowOverlaps={() => setShowOverlaps(true)}
+            />
           )}
         </div>
       </div>
