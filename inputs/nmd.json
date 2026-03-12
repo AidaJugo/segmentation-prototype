@@ -1,0 +1,14 @@
+{
+  "instrumentTypeId": 2,
+  "instrumentType": "nonmaturitydeposit",
+  "dimensions": [
+    {
+      "dimensionId": 1,
+      "dimensionName": "Sub Product",
+      "dimensionColumn": "sub_product_id",
+      "dimensionType": "list",
+      "minValue": null,
+      "maxValue": null
+    }
+  ]
+}
